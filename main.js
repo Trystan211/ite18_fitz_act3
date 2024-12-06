@@ -41,11 +41,11 @@ const loader = new GLTFLoader();
 let yetiPosition = { x: 0, y: -0.5, z: 0 };
 
 loader.load(
-  'https://trystan211.github.io/ite_joash/yeti_model.glb', // Replace with an actual Yeti model URL
+  'https://trystan211.github.io/ite18_fitz_act3/lowpoly_bigfoot.glb', // Replace with an actual Yeti model URL
   (gltf) => {
     const yeti = gltf.scene;
     yeti.position.set(yetiPosition.x, yetiPosition.y, yetiPosition.z);
-    yeti.scale.set(0.01, 0.01, 0.01); // Adjust size appropriately
+    yeti.scale.set(1, 1, 1); // Adjust size appropriately
     scene.add(yeti);
   },
   undefined,
