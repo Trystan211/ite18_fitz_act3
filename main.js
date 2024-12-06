@@ -38,17 +38,25 @@ spotlight.penumbra = 0.3;
 spotlight.castShadow = true;
 scene.add(spotlight);
 
-// Load Yeti Model
+// Load Yeti Model with Animations
 const loader = new GLTFLoader();
-let yetiPosition = { x: 0, y: 0, z: 0 };
-
+let mixer;
 loader.load(
-  'https://trystan211.github.io/ite_joash/yeti_model.glb', // Replace with actual model path
+  'https://trystan211.github.io/ite18_fitz_act3/lowpoly_bigfoot.glb', // Replace with actual model path
   (gltf) => {
     const yeti = gltf.scene;
-    yeti.position.set(yetiPosition.x, yetiPosition.y, yetiPosition.z);
+    yeti.position.set(0, 0, 0);
     yeti.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
     scene.add(yeti);
+
+    // Animation Mixer
+    mixer = new THREE.AnimationMixer(yeti);
+
+    // Play All Animations
+    gltf.animations.forEach((clip) => {
+      const action = mixer.clipAction(clip);
+      action.play();
+    });
   },
   undefined,
   (error) => console.error('Error loading Yeti model:', error)
@@ -171,9 +179,13 @@ const particles = new THREE.Points(particlesGeometry, particlesMaterial);
 scene.add(particles);
 
 // Animation Loop
+const clock = new THREE.Clock();
+
 const animate = () => {
+  const delta = clock.getDelta();
+  if (mixer) mixer.update(delta); // Update animations
+
   const positions = particlesGeometry.attributes.position.array;
-  const velocities = particlesGeometry.attributes.velocity.array;
 
   for (let i = 0; i < particleCount; i++) {
     positions[i * 3 + 1] -= 0.1; // Move particles downward for snow
