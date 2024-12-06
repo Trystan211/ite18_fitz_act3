@@ -46,7 +46,7 @@ loader.load(
   (gltf) => {
     const yeti = gltf.scene;
     yeti.position.set(0, 0, 0);
-    yeti.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
+    yeti.scale.set(3, 3, 3); // Adjust scale as needed
     scene.add(yeti);
 
     // Animation Mixer
