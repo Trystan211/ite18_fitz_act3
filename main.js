@@ -4,8 +4,8 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xb0e0e6); // Light blue for a snowy atmosphere
-scene.fog = new THREE.Fog(0xadd8e6, 5, 40); // Light blue fog to mimic snow blizzard
+scene.background = new THREE.Color(0xcce7ff); // Light icy blue
+scene.fog = new THREE.Fog(0xcce7ff, 10, 50); // Snow blizzard effect
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(20, 10, 30);
@@ -22,45 +22,54 @@ controls.dampingFactor = 0.25;
 // Snowy Ground
 const snow = new THREE.Mesh(
   new THREE.PlaneGeometry(60, 60),
-  new THREE.MeshStandardMaterial({ color: 0xffffff }) // Pure white for snow
+  new THREE.MeshStandardMaterial({ color: 0xffffff }) // Snowy white
 );
 snow.rotation.x = -Math.PI / 2;
 scene.add(snow);
 
 // Lights
-const ambientLight = new THREE.AmbientLight(0xbbbbbb, 0.6);
+const ambientLight = new THREE.AmbientLight(0x99ccff, 0.4); // Icy blue ambient light
 scene.add(ambientLight);
 
 const spotlight = new THREE.SpotLight(0xffffff, 1);
-spotlight.position.set(0, 20, 0); // Spotlight directly above the center
+spotlight.position.set(0, 30, 0);
+spotlight.angle = Math.PI / 6;
+spotlight.penumbra = 0.3;
 spotlight.castShadow = true;
 scene.add(spotlight);
 
-// Load the Yeti model
+// Load Yeti Model with Animations
 const loader = new GLTFLoader();
-let yetiPosition = { x: 0, y: -0.5, z: 0 };
-
+let mixer;
 loader.load(
-  'https://trystan211.github.io/ite18_fitz_act3/lowpoly_bigfoot.glb', // Replace with an actual Yeti model URL
+  'https://trystan211.github.io/ite_joash/yeti_model.glb', // Replace with actual model path
   (gltf) => {
     const yeti = gltf.scene;
-    yeti.position.set(yetiPosition.x, yetiPosition.y, yetiPosition.z);
-    yeti.scale.set(1, 1, 1); // Adjust size appropriately
+    yeti.position.set(0, 0, 0);
+    yeti.scale.set(2, 2, 2); // Adjust scale as needed
     scene.add(yeti);
+
+    // Animation Mixer
+    mixer = new THREE.AnimationMixer(yeti);
+
+    // Play All Animations
+    gltf.animations.forEach((clip) => {
+      const action = mixer.clipAction(clip);
+      action.play();
+    });
   },
   undefined,
   (error) => console.error('Error loading Yeti model:', error)
 );
 
-// Pointy Rocks with Snowy Colors
+// Raycastable Spiky Rocks
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const tallRocks = []; // Store references for raycasting
-
+const tallRocks = [];
 const rockMaterial = new THREE.MeshStandardMaterial({
-  color: 0xd3d3d3, // Light gray to fit the snowy atmosphere
-  roughness: 0.9,
-  metalness: 0.1,
+  color: 0x6666ff, // Icy blue-gray
+  roughness: 0.8,
+  metalness: 0.2
 });
 
 for (let i = 0; i < 10; i++) {
@@ -77,38 +86,12 @@ for (let i = 0; i < 10; i++) {
   scene.add(tallRock);
 }
 
-// Handle Click for Raycasted Rocks
-const handleClick = (event) => {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersects = raycaster.intersectObjects(tallRocks);
-
-  if (intersects.length > 0) {
-    const selectedRock = intersects[0].object;
-
-    const originalColor = selectedRock.material.color.clone();
-    const originalScale = selectedRock.scale.clone();
-
-    selectedRock.material.color.set(0xaaaaaa); // Darker gray for highlight
-    selectedRock.scale.multiplyScalar(1.2);
-
-    setTimeout(() => {
-      selectedRock.material.color.copy(originalColor);
-      selectedRock.scale.copy(originalScale);
-    }, 2000);
-  }
-};
-
-window.addEventListener('click', handleClick);
-
-// Floating Diamond Crystals
+// Diamonds with Raycasting
+const diamonds = [];
 const diamondMaterial = new THREE.MeshStandardMaterial({
-  color: 0x87cefa, // Sky blue for crystals
-  roughness: 0.5,
-  metalness: 1,
+  color: 0x99ccff,
+  roughness: 0.3,
+  metalness: 0.9
 });
 
 for (let i = 0; i < 30; i++) {
@@ -116,31 +99,70 @@ for (let i = 0; i < 30; i++) {
   const z = Math.random() * 60 - 30;
 
   const diamond = new THREE.Mesh(
-    new THREE.OctahedronGeometry(Math.random() * 0.5 + 0.1),
-    diamondMaterial
+    new THREE.TetrahedronGeometry(0.5, 0),
+    diamondMaterial.clone()
   );
-  diamond.position.set(x, Math.random() * 2 + 0.5, z);
+  diamond.position.set(x, 0.2, z);
   diamond.castShadow = true;
+  diamonds.push(diamond);
   scene.add(diamond);
 }
 
-// Blizzard Particles
-const particleCount = 10000; // Increase particle count for a denser blizzard
+// Handle Click Interaction
+const handleClick = (event) => {
+  // Normalize mouse position
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Update raycaster
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check intersections for tall rocks
+  const rockIntersects = raycaster.intersectObjects(tallRocks);
+  if (rockIntersects.length > 0) {
+    const selectedRock = rockIntersects[0].object;
+    const originalColor = selectedRock.material.color.clone();
+    const originalScale = selectedRock.scale.clone();
+
+    selectedRock.material.color.set(0x4444ff); // Darker blue
+    selectedRock.scale.multiplyScalar(1.2);
+
+    setTimeout(() => {
+      selectedRock.material.color.copy(originalColor);
+      selectedRock.scale.copy(originalScale);
+    }, 2000);
+  }
+
+  // Check intersections for diamonds
+  const diamondIntersects = raycaster.intersectObjects(diamonds);
+  if (diamondIntersects.length > 0) {
+    const selectedDiamond = diamondIntersects[0].object;
+    const originalColor = selectedDiamond.material.color.clone();
+
+    selectedDiamond.material.color.set(0x66ccff); // Mystical glowing blue
+
+    setTimeout(() => {
+      selectedDiamond.material.color.copy(originalColor);
+    }, 2000);
+  }
+};
+
+// Event Listeners
+window.addEventListener('click', handleClick);
+
+// Snow Particles
+const particleCount = 12000;
 const particlesGeometry = new THREE.BufferGeometry();
 const positions = [];
 const velocities = [];
 
 for (let i = 0; i < particleCount; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const distance = Math.random() * 45 + 5;
-  const y = Math.random() * 12 + 2;
-
   positions.push(
-    Math.cos(angle) * distance + yetiPosition.x,
-    y,
-    Math.sin(angle) * distance + yetiPosition.z
+    Math.random() * 60 - 30,
+    Math.random() * 50,
+    Math.random() * 60 - 30
   );
-  velocities.push(0.01 * (Math.random() > 0.5 ? 1 : -1)); // Faster rotation
+  velocities.push(0.002 * (Math.random() > 0.5 ? 1 : -1));
 }
 
 particlesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -150,29 +172,24 @@ const particlesMaterial = new THREE.PointsMaterial({
   color: 0xffffff,
   size: 0.1,
   transparent: true,
-  opacity: 0.8,
+  opacity: 0.8
 });
 
 const particles = new THREE.Points(particlesGeometry, particlesMaterial);
 scene.add(particles);
 
 // Animation Loop
+const clock = new THREE.Clock();
+
 const animate = () => {
+  const delta = clock.getDelta();
+  if (mixer) mixer.update(delta); // Update animations
+
   const positions = particlesGeometry.attributes.position.array;
-  const velocities = particlesGeometry.attributes.velocity.array;
 
   for (let i = 0; i < particleCount; i++) {
-    const xIndex = i * 3;
-    const zIndex = xIndex + 2;
-
-    const x = positions[xIndex] - yetiPosition.x;
-    const z = positions[zIndex] - yetiPosition.z;
-
-    const angle = Math.atan2(z, x) + velocities[i];
-    const distance = Math.sqrt(x * x + z * z);
-
-    positions[xIndex] = Math.cos(angle) * distance + yetiPosition.x;
-    positions[zIndex] = Math.sin(angle) * distance + yetiPosition.z;
+    positions[i * 3 + 1] -= 0.1; // Move particles downward for snow
+    if (positions[i * 3 + 1] < 0) positions[i * 3 + 1] = 50;
   }
   particlesGeometry.attributes.position.needsUpdate = true;
 
@@ -189,4 +206,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
