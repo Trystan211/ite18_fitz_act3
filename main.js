@@ -4,8 +4,8 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xcce7ff); // Light icy blue
-scene.fog = new THREE.Fog(0xcce7ff, 10, 50); // Snow blizzard effect
+scene.background = new THREE.Color(0xcce7ff);
+scene.fog = new THREE.Fog(0xcce7ff, 10, 50);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(20, 10, 30);
@@ -22,13 +22,13 @@ controls.dampingFactor = 0.25;
 // Snowy Ground
 const snow = new THREE.Mesh(
   new THREE.PlaneGeometry(60, 60),
-  new THREE.MeshStandardMaterial({ color: 0xffffff }) // Snowy white
+  new THREE.MeshStandardMaterial({ color: 0xffffff })
 );
 snow.rotation.x = -Math.PI / 2;
 scene.add(snow);
 
 // Lights
-const ambientLight = new THREE.AmbientLight(0x99ccff, 0.4); // Icy blue ambient light
+const ambientLight = new THREE.AmbientLight(0x99ccff, 0.5);
 scene.add(ambientLight);
 
 const spotlight = new THREE.SpotLight(0xffffff, 1);
@@ -46,13 +46,10 @@ loader.load(
   (gltf) => {
     const yeti = gltf.scene;
     yeti.position.set(0, 0, 0);
-    yeti.scale.set(3, 3, 3); // Adjust scale as needed
+    yeti.scale.set(3, 3, 3);
     scene.add(yeti);
 
-    // Animation Mixer
     mixer = new THREE.AnimationMixer(yeti);
-
-    // Play All Animations
     gltf.animations.forEach((clip) => {
       const action = mixer.clipAction(clip);
       action.play();
@@ -62,36 +59,12 @@ loader.load(
   (error) => console.error('Error loading Yeti model:', error)
 );
 
-// Raycastable Spiky Rocks
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const tallRocks = [];
-const rockMaterial = new THREE.MeshStandardMaterial({
-  color: 0x6666ff, // Icy blue-gray
-  roughness: 0.8,
-  metalness: 0.2
-});
-
-for (let i = 0; i < 10; i++) {
-  const x = Math.random() * 50 - 25;
-  const z = Math.random() * 50 - 25;
-
-  const tallRock = new THREE.Mesh(
-    new THREE.ConeGeometry(Math.random() * 1 + 1, Math.random() * 10 + 5, 8),
-    rockMaterial.clone()
-  );
-  tallRock.position.set(x, Math.random() * 2, z);
-  tallRock.castShadow = true;
-  tallRocks.push(tallRock);
-  scene.add(tallRock);
-}
-
-// Medium White Pointy Rocks
+// Medium-Sized Pointy Rocks
 const mediumRocks = [];
 const mediumRockMaterial = new THREE.MeshStandardMaterial({
-  color: 0xf0f0f0, // White
-  roughness: 0.9,
-  metalness: 0.1,
+  color: 0xf5f5f5, // White for snowy effect
+  roughness: 0.8,
+  metalness: 0.2
 });
 
 for (let i = 0; i < 15; i++) {
@@ -99,10 +72,10 @@ for (let i = 0; i < 15; i++) {
   const z = Math.random() * 60 - 30;
 
   const mediumRock = new THREE.Mesh(
-    new THREE.ConeGeometry(Math.random() * 2 + 1, Math.random() * 4 + 3, 8),
+    new THREE.ConeGeometry(Math.random() * 2 + 1, Math.random() * 6 + 3, 8),
     mediumRockMaterial.clone()
   );
-  mediumRock.position.set(x, Math.random() * 1, z);
+  mediumRock.position.set(x, 0.5, z);
   mediumRock.castShadow = true;
   mediumRocks.push(mediumRock);
   scene.add(mediumRock);
@@ -111,9 +84,9 @@ for (let i = 0; i < 15; i++) {
 // White Bushes
 const bushes = [];
 const bushMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffffff, // White
-  roughness: 0.8,
-  metalness: 0.2,
+  color: 0xffffff,
+  roughness: 0.9,
+  metalness: 0.1
 });
 
 for (let i = 0; i < 20; i++) {
@@ -121,87 +94,47 @@ for (let i = 0; i < 20; i++) {
   const z = Math.random() * 60 - 30;
 
   const bush = new THREE.Mesh(
-    new THREE.SphereGeometry(Math.random() * 1.5 + 0.5, 8, 8),
+    new THREE.SphereGeometry(Math.random() * 1 + 0.5, 8, 8),
     bushMaterial.clone()
   );
-  bush.position.set(x, Math.random() * 0.5, z);
+  bush.position.set(x, 0.25, z);
   bush.castShadow = true;
   bushes.push(bush);
   scene.add(bush);
 }
 
-// Diamonds with Raycasting
-const diamonds = [];
-const diamondMaterial = new THREE.MeshStandardMaterial({
-  color: 0x99ccff,
-  roughness: 0.3,
-  metalness: 0.9
-});
-
-for (let i = 0; i < 30; i++) {
-  const x = Math.random() * 60 - 30;
-  const z = Math.random() * 60 - 30;
-
-  const diamond = new THREE.Mesh(
-    new THREE.TetrahedronGeometry(0.5, 0),
-    diamondMaterial.clone()
-  );
-  diamond.position.set(x, 0.2, z);
-  diamond.castShadow = true;
-  diamonds.push(diamond);
-  scene.add(diamond);
-}
-
-// Handle Click Interaction
-const handleClick = (event) => {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-
-  const rockIntersects = raycaster.intersectObjects(tallRocks);
-  if (rockIntersects.length > 0) {
-    const selectedRock = rockIntersects[0].object;
-    selectedRock.material.color.set(0x4444ff);
-    selectedRock.scale.multiplyScalar(1.2);
-    setTimeout(() => {
-      selectedRock.material.color.set(0x6666ff);
-      selectedRock.scale.set(1, 1, 1);
-    }, 2000);
-  }
-
-  const diamondIntersects = raycaster.intersectObjects(diamonds);
-  if (diamondIntersects.length > 0) {
-    const selectedDiamond = diamondIntersects[0].object;
-    selectedDiamond.material.color.set(0x66ccff);
-    setTimeout(() => {
-      selectedDiamond.material.color.set(0x99ccff);
-    }, 2000);
-  }
-};
-window.addEventListener('click', handleClick);
-
-// Snow Particles Orbiting
-const particleCount = 12000;
+// Mjolnir-Style Orbiting Particles
+const particleCount = 3000;
 const particlesGeometry = new THREE.BufferGeometry();
 const positions = [];
-const velocities = [];
 const particleAngles = [];
-const radius = 30;
+const orbitSpeeds = [];
+const orbitRadius = 10;
 
 for (let i = 0; i < particleCount; i++) {
-  positions.push(Math.random() * 60 - 30, Math.random() * 50, Math.random() * 60 - 30);
-  velocities.push(0.002 * (Math.random() > 0.5 ? 1 : -1));
-  particleAngles.push(Math.random() * Math.PI * 2);
+  const angle = Math.random() * Math.PI * 2;
+  const height = Math.random() * 10 - 5;
+  const distance = Math.random() * orbitRadius;
+
+  positions.push(
+    Math.cos(angle) * distance,
+    height,
+    Math.sin(angle) * distance
+  );
+
+  particleAngles.push(angle);
+  orbitSpeeds.push(0.05 + Math.random() * 0.1);
 }
 
 particlesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-particlesGeometry.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 1));
+particlesGeometry.setAttribute('angle', new THREE.Float32BufferAttribute(particleAngles, 1));
+particlesGeometry.setAttribute('speed', new THREE.Float32BufferAttribute(orbitSpeeds, 1));
 
 const particlesMaterial = new THREE.PointsMaterial({
   color: 0xffffff,
-  size: 0.1,
+  size: 0.2,
   transparent: true,
-  opacity: 0.8
+  opacity: 0.9
 });
 
 const particles = new THREE.Points(particlesGeometry, particlesMaterial);
@@ -212,21 +145,27 @@ const clock = new THREE.Clock();
 
 const animateParticles = (delta) => {
   const positions = particlesGeometry.attributes.position.array;
+  const angles = particlesGeometry.attributes.angle.array;
+  const speeds = particlesGeometry.attributes.speed.array;
+
   for (let i = 0; i < particleCount; i++) {
-    const angle = particleAngles[i];
-    const orbitSpeed = velocities[i];
-    positions[i * 3] = Math.cos(angle) * radius;
-    positions[i * 3 + 2] = Math.sin(angle) * radius;
-    positions[i * 3 + 1] += Math.sin(clock.elapsedTime * orbitSpeed) * 0.1;
-    particleAngles[i] += orbitSpeed * delta;
+    const index = i * 3;
+
+    angles[i] += speeds[i] * delta;
+
+    positions[index] = Math.cos(angles[i]) * orbitRadius;
+    positions[index + 2] = Math.sin(angles[i]) * orbitRadius;
   }
+
   particlesGeometry.attributes.position.needsUpdate = true;
+  particlesGeometry.attributes.angle.needsUpdate = true;
 };
 
 const animate = () => {
   const delta = clock.getDelta();
   if (mixer) mixer.update(delta);
   animateParticles(delta);
+
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
